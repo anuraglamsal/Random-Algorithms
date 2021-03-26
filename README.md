@@ -11,6 +11,6 @@
   
   * Now, provide all the edges of both of those graphs as per asked using the new lables for each vertex. 
   
-  Then, that is it. At the end, the algorithm will print a one-one function between the vertices of the graphs if they are isomorphic, and if they aren't isomorphic
+  Then that is it. At the end, the algorithm will print a one-one function between the vertices of the graphs if they are isomorphic, and if they aren't isomorphic
   then it will say so. Now, you have to manually convert the labels of vertices in the one-one function given at the end to their original labels if you care
   about that. Therefore, it is good to note down the relationship of the new label of each vertex with its original label when you're labeling them. 
