@@ -1,10 +1,10 @@
   <b><i>A naive algorithm to check if two graphs are isomorphic:</i></b><br>
 
   From rough calculations, I think the number of iterations in worst case of this algorithm is n<sup>2</sup>•n!•E<sup>2</sup>+n where 'n' is the number of vertices
-  and 'E' is the number of edges. The way to use it is by first counting the number of vertices and edges in your graph. Then give those as inputs. 
+  and 'E' is the number of edges. The way to use the algorithm is by first counting the number of vertices and edges in your graph. Then give those as inputs. 
   If they are accepted, then you need to do the following:<br>
   
-  * Change the labels of the vertices of your first graph to numbers from 0 to n-1 where 'n' is the number of vertices. Each vertex should have a unique label. It doesn't 
+  * Change the labels of the vertices of your first graph using numbers from 0 to n-1 where 'n' is the number of vertices. Each vertex should have a unique label. It doesn't 
     matter what number you attach to a vertex; just make sure that the label of each vertex is unique. 
     
   * Do the same as above for the second graph. 
