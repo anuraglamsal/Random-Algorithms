@@ -13,4 +13,8 @@
   
   Then that is it. At the end, the algorithm will print a one-one function between the vertices of the graphs if they are isomorphic, and if they aren't isomorphic
   then it will say so. Now, you have to manually convert the labels of vertices in the one-one function given at the end to their original labels if you care
-  about that. Therefore, it is good to note down the relationship of the new label of each vertex with its original label when you're labeling them. 
+  about that. Therefore, it is good to note down the relationship of the new label of each vertex with its original label when you're labeling them. <br>
+
+  <b><i>Subset sum problem using knapsack dp:</i></b><br>
+  
+  If "S" is the number of elements in your array and "V" is the value that you want to sum to, the number of iterations is (S+1)•(V+1).
