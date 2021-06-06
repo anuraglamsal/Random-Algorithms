@@ -24,7 +24,6 @@ bool sum_dp(vector<int> v, int V){
   return K[v.size()][V];
 }
 
-
 int main(){
   cout << "Enter the size of your array." << endl;
   int n;
