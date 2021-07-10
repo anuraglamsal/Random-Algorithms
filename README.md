@@ -18,3 +18,7 @@
   <b><i>Subset sum problem using knapsack dp:</i></b><br>
   
   If "S" is the number of elements in your array and "V" is the value that you want to sum to, the number of iterations is (S+1)•(V+1). All input values should be non-negative. 
+
+<b><i>Range sum in a 2d matrix using 2d prefix sums:</i></b><br>
+  
+  Theory: https://usaco.guide/silver/prefix-sums-2?lang=cpp
