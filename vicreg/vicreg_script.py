@@ -45,23 +45,47 @@ def transforms(img):
 
     return aug_img_tensor
 
-
 class VICRegLoss(torch.nn.Module):
 
-    def __init__(self, lamb, mu, nu):
+    def __init__(self, lamb, mu, nu, eps):
         super(VICRegLoss, self).__init__()
         self.lamb = lamb
         self.mu = mu
         self.nu = nu
+        self.eps = eps
 
     def dist(self, x_aug_1, x_aug_2):
         return torch.cdist(x_aug_1, x_aug_2, p = 1.0)
+    
+    def var(self, x_aug_1, x_aug_2):
+        return var_calc(x_aug_1) + var_calc(x_aug_2)
 
-    def var(self):
-        return
+    def var_calc(self, x_aug):
+        x_aug_t = x_aug.permute(2, 1, 0) # transpose because we want each vector to contain values of some particular dim.  
+        dims = x_aug_t.shape[0]
+        sum = 0
+        for i in range(0, dims):
+            sum = sum + max(0, self.lamb - torch.sqrt(torch.var(x_aug_t[0][i]) + self.eps)) # (1) in paper
+        return sum/dims
 
     def covar(self):
-        return
+        return regularized_covar(covar_calc(x_aug_1)) + regularized_covar(covar_calc(x_aug_2))
+
+    def covar_calc(self, x_aug):
+        batch_size, dims = x_aug.shape[0], x_aug.shape[1]
+        mean = torch.sum(x_aug, dim = 0) / batch_size 
+        sum = 0
+        for i in range(0, batch_size):
+            sum = sum + ((x_aug[0][i] - mean).t() @ (x_aug[0][i] - mean)) # (3) in paper
+        return sum / (batch_size - 1)
+
+    def regularized_covar(self, C):
+        sum = 0
+        for i in range(0, C.shape[0]):
+            for j in range(0, C.shape[1]):
+                if i != j:
+                    sum = sum + C[i][j] * C[i][j] # (4) in paper
+        return sum / C.shape[0] # the covariance matrix is dims x dims. 
 
     def forward(self, x_aug_1, x_aug_2):
         return 
