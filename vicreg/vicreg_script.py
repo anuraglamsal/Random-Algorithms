@@ -53,85 +53,58 @@ class VICRegLoss(torch.nn.Module):
         self.mu = mu
         self.nu = nu
         self.eps = eps
+        self.var = torch.empty()  # we will extract this from the covariance matrix i.e. the diagonal.
 
     def dist(self, x_aug_1, x_aug_2):
-        return torch.cdist(x_aug_1, x_aug_2, p = 1.0)
+        return torch.cdist(x_aug_1, x_aug_2, p = 1.0) # (5) of paper. p = 1.0 implies L1 norm. 
     
-    def var(self, x_aug_1, x_aug_2):
-        return var_calc(x_aug_1) + var_calc(x_aug_2)
+    def regularized_covars(self, x_aug_1, x_aug_2):
+        return calc_regularized_covar(x_aug_1) + calc_regularlized_covar(x_aug_2)
 
-    def var_calc(self, x_aug):
-        x_aug_t = x_aug.permute(2, 1, 0) # transpose because we want each vector to contain values of some particular dim.  
-        dims = x_aug_t.shape[0]
+    def calc_regularized_covar(self, x_aug):
+        covar = torch.cov(x_aug.t()) # very nice way to write (3) of paper
+        self.var = torch.diag(covar) # store the variance here before zeroing it out for the regularized covar calc below. 
+        regularized_covar = torch.sum(torch.square(torch.tril(covar, diagonal = -1))) # (4) of paper
+        return regularized_covar
+    
+    def regularized_vars(self, x_aug_1, x_aug_2):
+        return calc_regularized_vars(x_aug_1) + calc_regularized_vars(x_aug_2)
+
+    def calc_regularlized_vars(self, x_aug):
+        dims = x_aug.shape[1]
         sum = 0
-        for i in range(0, dims):
-            sum = sum + max(0, self.lamb - torch.sqrt(torch.var(x_aug_t[0][i]) + self.eps)) # (1) in paper
-        return sum/dims
-
-    def covar(self):
-        return regularized_covar(covar_calc(x_aug_1)) + regularized_covar(covar_calc(x_aug_2))
-
-    def covar_calc(self, x_aug):
-        batch_size, dims = x_aug.shape[0], x_aug.shape[1]
-        mean = torch.sum(x_aug, dim = 0) / batch_size 
-        sum = 0
-        for i in range(0, batch_size):
-            sum = sum + ((x_aug[0][i] - mean).t() @ (x_aug[0][i] - mean)) # (3) in paper
-        return sum / (batch_size - 1)
-
-    def regularized_covar(self, C):
-        sum = 0
-        for i in range(0, C.shape[0]):
-            for j in range(0, C.shape[1]):
-                if i != j:
-                    sum = sum + C[i][j] * C[i][j] # (4) in paper
-        return sum / C.shape[0] # the covariance matrix is dims x dims. 
+        for el in x_aug:
+            sum = sum + max(0, self.lamb - torch.sqrt(el + self.eps)) # (1) of paper
+        return sum / dims
 
     def forward(self, x_aug_1, x_aug_2):
         return 
-"""
-resnet = torchvision.models.resnet50(progress = True)
-# print(resnet.fc.out_features) # This is 1000. Need to make 2048.
-resnet.fc = torch.nn.Linear(resnet.fc.in_features, 2048)
-print(resnet.fc.out_features) # This is 2048 now. 
-"""
 
 class SiameseBranch(torch.nn.Module):
 
     def __init__(self):
         super(SiameseBranch, self).__init__()
 
-        # encoder
-        self.resnet = torchvision.models.resnet50(progress = True)
+        # encoder. Just do "SiameseBranchObject.resnet" to access the resnet. 
+        self.resnet = torchvision.models.resnet50(progress = True) 
         # print(resnet.fc.out_features) # This is 1000. Need to make 2048.
         self.resnet.fc = torch.nn.Linear(self.resnet.fc.in_features, 2048)
         # print(resnet.fc.out_features) # This is 2048 now.
 
         # expander 
-        self.fcl1 = torch.nn.Linear(2048, 8192)
-        self.bn1 = torch.nn.BatchNorm1d(8192)
-        self.fcl2 = torch.nn.Linear(8192, 8192)
-        self.bn2 = torch.nn.BatchNorm1d(8192)
-        self.linear1 = torch.nn.Linear(8192, 8192)
-        self.relu = torch.nn.ReLU()
+        self.expander = torch.nn.Sequential(
+            torch.nn.Linear(2048, 8192),
+            torch.nn.ReLU(),
+            torch.nn.BatchNorm1d(8192),
+            torch.nn.Linear(8192, 8192),
+            torch.nn.ReLU(),
+            torch.nn.BatchNorm1d(8192),
+            torch.nn.Linear(8192, 8192)
+        )
 
     def forward(self, img):
         # encoder compute
         encoder_out = self.resnet(img)
 
         # expander compute
-        first_layer_out = self.bn1(self.relu(self.fcl1(encoder_out)))
-        second_layer_out = self.bn2(self.relu(self.fcl2(first_layer_out)))
-        final_out = self.linear1(second_layer_out)
-        return final_out
-
-"""
-class test:
-    def met1(self):
-        print("test")
-    def met2(self):
-        self.met1()
-        
-x = test()
-x.met2()
-"""
+        return self.expander(encoder_out)
