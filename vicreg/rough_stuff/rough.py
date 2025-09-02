@@ -1,6 +1,6 @@
 import torch
 
-x = torch.randn(3, 5) # col x row
+"""x = torch.randn(3, 5) # col x row
 
 print(x)
 print(x.shape)
@@ -42,7 +42,9 @@ print(h[0][0]) # yeah, works as is intuitive..
 h = torch.randn(5, 5) # way more sensible that you get something like this than below..
 print(h)
 i = torch.randn(5, 1, 5)
-print(i)
+print(i)"""
 
-
-
+x = torch.empty(2)
+x[0] = torch.rand(4)
+x[1] = torch.rand(4)
+print(x)
