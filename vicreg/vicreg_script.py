@@ -10,15 +10,15 @@ class VICRegLoss(nn.Module):
         self.lamb = lamb
         self.mu = mu
         self.nu = nu
-        self.var_1 = torch.empty()  # We will extract this from the covariance matrix i.e. the diagonal. This is for the first set of augs.
-        self.var_2 = torch.empty()  # This is for the second set of augs. 
-
+        self.var_1 = None  # We will extract this from the covariance matrix i.e. the diagonal. This is for the first set of augs.
+        self.var_2 = None  # This is for the second set of augs. 
+    
     def dist(self, x_aug_1, x_aug_2):
         return torch.cdist(x_aug_1, x_aug_2, p = 1.0) / x_aug_1.shape[0] # (5) of paper. p = 1.0 implies L1 norm. 
-    
+   
     def regularized_covars(self, x_aug_1, x_aug_2):
-        return calc_regularized_covar(x_aug_1, 1) + calc_regularlized_covar(x_aug_2, 2)
-
+        return self.calc_regularized_covar(x_aug_1, 1) + self.calc_regularized_covar(x_aug_2, 2)
+    
     def calc_regularized_covar(self, x_aug, idx): # idx = to store variances of the batches separately -- in self.var_1 and self.var_2.
         covar = torch.cov(x_aug.t()) # very nice way to write (3) of paper
         if idx == 1:
@@ -29,19 +29,19 @@ class VICRegLoss(nn.Module):
         return regularized_covar
     
     def regularized_vars(self, x_aug_1, x_aug_2):
-        return calc_regularized_vars(x_aug_1, 1) + calc_regularized_vars(x_aug_2, 2)
+        return self.calc_regularized_vars(x_aug_1, 1) + self.calc_regularized_vars(x_aug_2, 2)
 
-    def calc_regularlized_vars(self, x_aug, idx, upper_limit = 1, eps = 0.0001):
+    def calc_regularized_vars(self, x_aug, idx, upper_limit = 1, eps = 0.0001):
         dims = x_aug.shape[1]
         sum = 0
-        for el in var_1 if idx == 1 else var_2:
+        for el in self.var_1 if idx == 1 else self.var_2:
             sum = sum + max(0, upper_limit - torch.sqrt(el + eps)) # (1) of paper. 
         return sum / dims
 
     def forward(self, x_aug_1, x_aug_2):
-        weighted_dist = self.lamb * dist(x_aug_1, x_aug_2)
-        weighted_covars = self.nu * regularized_covars(x_aug_1, x_aug_2)
-        weighted_vars = self.mu * regularized_vars(x_aug_1, x_aug_2)
+        weighted_dist = self.lamb * self.dist(x_aug_1, x_aug_2) 
+        weighted_covars = self.nu * self.regularized_covars(x_aug_1, x_aug_2)
+        weighted_vars = self.mu * self.regularized_vars(x_aug_1, x_aug_2)
         return weighted_dist + weighted_covars + weighted_vars
 
 class SiameseBranch(nn.Module):
@@ -66,9 +66,25 @@ class SiameseBranch(nn.Module):
             nn.Linear(8192, 8192)
         )
 
-    def forward(self, img):
+    def forward(self, x_aug_1, x_aug_2):
         # encoder compute
-        encoder_out = self.resnet(img)
+        encoder_out_1 = self.resnet(x_aug_1)
+        encoder_out_2 = self.resnet(x_aug_2)
 
         # expander compute
-        return self.expander(encoder_out)
+        return self.expander(encoder_out_1), self.expander(encoder_out_2)
+
+# Seems to at least give values for dummy data.
+"""
+dummy_data_1 = torch.randn(5, 3, 16, 16)
+dummy_data_2 = torch.randn(5, 3, 16, 16)
+
+model = SiameseBranch()
+loss = VICRegLoss()
+
+output_1, output_2 = model(dummy_data_1, dummy_data_2)
+print(output_1, output_2)
+
+loss_output = loss(output_1, output_2)
+print(loss_output)
+"""

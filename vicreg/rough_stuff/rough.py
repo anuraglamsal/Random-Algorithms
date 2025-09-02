@@ -44,7 +44,10 @@ print(h)
 i = torch.randn(5, 1, 5)
 print(i)"""
 
-x = torch.empty(2)
+"""x = torch.empty(2)
 x[0] = torch.rand(4)
 x[1] = torch.rand(4)
-print(x)
+print(x)"""
+
+y = torch.randn(2, 2, 3)
+print(y)
